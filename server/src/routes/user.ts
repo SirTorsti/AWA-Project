@@ -56,7 +56,7 @@ router.post("/login",
                     id: user?._id,
                     username: user.username
                 }
-                const token: string = jwt.sign(jwtPayload, process.env.SECRET as string, {expiresIn: "1h"})
+                const token: string = jwt.sign(jwtPayload, process.env.SECRET as string, {expiresIn: "2m"})
                 res.status(200).json({success: true, token})
             }
         } catch (error: any) {
