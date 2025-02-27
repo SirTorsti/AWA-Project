@@ -75,9 +75,10 @@ button:focus-visible {
   padding: 10px;
   background-color: #f9f9f9;
   height: 700px;
-  overflow: hidden;
+  overflow: visible;
   min-width: 20%; /*To limit amount of cols in one row*/
 }
+
 
 .container{
   margin-top: 50px; /*otherwise columns go under appBar when many are added*/
@@ -113,7 +114,8 @@ button:focus-visible {
   padding: 8px;
   margin: 5px 0;
   background-color: white;
-  box-shadow: 1px 1px 3px #1a1a1a
+  box-shadow: 1px 1px 3px #1a1a1a;
+
 }
 
 .add-card-button {
@@ -126,6 +128,11 @@ button:focus-visible {
   gap: 10px;
   justify-content: flex-start;
   margin: 0;
+}
+
+.modal-content {
+  margin-top: 150px;
+  display: flex;
 }
 
 /*media queries for responsiveness*/

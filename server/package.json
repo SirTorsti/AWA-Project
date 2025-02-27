@@ -20,6 +20,7 @@
     "mongoose": "^8.10.1",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
+    "react-dnd-html5-backend": "^16.0.1",
     "tsc-watch": "^6.2.1"
   },
   "devDependencies": {

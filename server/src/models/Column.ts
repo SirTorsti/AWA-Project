@@ -7,9 +7,9 @@ interface IColumn extends Document {
     cards: ICard[]
 }
 
-const ColumnSchema: Schema = new Schema({
+const ColumnSchema: Schema = new Schema<IColumn>({
     name: { type: String, required: true },
-    cards: {type: [CardSchema], default: []}
+    cards: {type: [CardSchema], default: [] as ICard[] }
 })
 
 const Column: mongoose.Model<IColumn> = mongoose.model<IColumn>("Column", ColumnSchema)
