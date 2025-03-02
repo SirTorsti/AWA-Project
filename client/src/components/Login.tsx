@@ -1,7 +1,7 @@
 import { Box, Button, TextField } from '@mui/material'
 import { useState } from 'react'
 
-
+//handle login via user router and set the token for user
 const fetchData = async (username: string, password: string) => {
     try {
         const response = await fetch("http://localhost:8000/user/login",{
@@ -19,10 +19,6 @@ const fetchData = async (username: string, password: string) => {
             throw new Error("Error fecthing data")
         }
         const data = await response.json()
-        if(!data) {
-            console.log("ei dataa saatana")
-        }
-        console.log("response data: ", data)
 
         if(data.token) {
             localStorage.setItem("token", data.token)

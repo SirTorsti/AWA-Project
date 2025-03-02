@@ -1,88 +1,123 @@
 import express, {Request, Response, Router} from 'express'
 import { Column } from "../models/Column"
 import { Card, ICard } from "../models/Card"
+import { CustomRequest, validateToken } from "../middleware/validateToken"
 
 const router: Router = Router()
 
     //get all columns
-    router.get('/columns', async (req: Request, res: Response) => {
+    router.get('/columns', validateToken, async (req: CustomRequest, res: Response) => {
         try {
-            const columns = await Column.find()
-            res.status(201).json(columns)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const userId = req.user.id
+            const columns = await Column.find({userId})
+            res.status(200).json(columns)
         } catch(error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 
     //adding new column
-    router.post("/columns", async (req: Request, res: Response) => {
-        const column = new Column({
-            name: req.body.name,
-            cards: []
-        })
+    router.post("/columns", validateToken, async (req: CustomRequest, res: Response) => {
+        
+        try{
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
 
-        try {
+            const column = new Column({
+                name: req.body.name,
+                cards: [],
+                userId: req.user.id
+            })
+        
             const newColumn = await column.save()
             res.status(201).json(newColumn)
         } catch (error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 
     //renaming of columns
-    router.patch("/columns/:id", async(req: Request, res: Response) => {
+    router.patch("/columns/:id", validateToken, async(req: CustomRequest, res: Response) => {
         try {
-            const column = await Column.findById(req.params.id)
+            const column = await Column.findOne({ _id: req.params.id, userId: req.user?.id })
             if (!column) {
                 res.status(404).json({message: 'Column not found'})
                 return
             }
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const userId = req.user.id
             column.name = req.body.name
-            await column.save()
+            await column.save(userId)
             res.status(200).json(column)
         } catch(error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 
     //deletion of columh
-    router.delete("/columns/:id", async (req: Request, res: Response) => {
+    router.delete("/columns/:id", validateToken, async (req: CustomRequest, res: Response) => {
         try{
-            const column = await Column.findById(req.params.id)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const column = await Column.findOne({ _id: req.params.id, userId: req.user?.id })
             if (!column) {
                 res.status(404).json({message: 'Column not found'})
                 return
             }
-            await Column.deleteOne({ _id: req.params.id })
+            await Column.deleteOne({ _id: req.params.id, userId: req.user?.id })
             res.json(({message: 'Column deleted'}))
         } catch (error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 
     //add card to a spesific column
-    router.post("/columns/:id/cards", async (req: Request, res: Response) => {
+    router.post("/columns/:id/cards", validateToken, async (req: CustomRequest, res: Response) => {
         try{
-            const column = await Column.findById(req.params.id)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const column = await Column.findOne({ _id: req.params.id, userId: req.user?.id })
             if(!column) {
                 res.status(404).json({message: 'Column not found'})
                 return
             }
 
-            const card = new Card({ title: req.body.title, body: req.body.body})
+            const card = new Card({ title: req.body.title, body: req.body.body, userId: req.user.id})
             await card.save()
             column.cards.push(card)
             await column.save()
             res.status(201).json(column)
         } catch(error: any) {
             res.status(400).json({message: error.message})
+            return
         }
     })
 
     //edit card title and body
-    router.patch("/columns/:columnId/cards/:cardId", async (req: Request, res: Response) => {
+    router.patch("/columns/:columnId/cards/:cardId", validateToken, async (req: CustomRequest, res: Response) => {
         try {
-            const column = await Column.findById(req.params.columnId)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const column = await Column.findOne({ _id: req.params.columnId, userId: req.user?.id })
             if (!column) {
                 res.status(404).json({message: 'column not found'})
                 return
@@ -90,33 +125,41 @@ const router: Router = Router()
 
             const card = column.cards.find(card => card._id.toString() === req.params.cardId)
          
-            if (card) {
-                card.title = req.body.title
-                card.body = req.body.body
-                card.id = req.body.cardId
-                await column.save()
-                res.status(200).json(column)
+            if (!card) {
+                res.status(404).json({message: "Card not found"})
+                return
             }
+
+            card.title = req.body.title || card.title
+            card.body = req.body.body || card.body
+
+            await column.save()
+
+            res.status(200).json(column)
+
         } catch (error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 
     //handle reorder of cards when dragging
-    router.post("/columns/:columnId/cards/reorder", async (req: Request, res: Response) => {
-        if(!req.body) {
-            res.status(400).json({error :"invalid request body"})
-        }
+    router.post("/columns/:columnId/cards/reorder", validateToken, async (req: CustomRequest, res: Response) => {
         try {
-            const column = await Column.findById(req.params.columnId)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const column = await Column.findOne({ _id: req.params.columnId, userId: req.user?.id })
             if (!column) {
                 res.status(404).json({ message: "Column not found" })
                 return
             }
-            if(!column.cards) {
+            if(!Array.isArray(column.cards)) {
                 res.status(404).json({message: "Cards not found :("})
+                return
             }
-            const newOrder = req.body.cards.map((card: any) => column.cards.find(c => c._id.toString() === card._id));
+            const newOrder = req.body.cards.map((card: any) => column.cards.find(c => c._id.toString() === card._id))
 
             if(newOrder.includes(undefined)) {
                 res.status(400).json({message: "Invalid card IDs in new order"})
@@ -126,8 +169,8 @@ const router: Router = Router()
             await column.save()
             res.status(200).json(column)
         } catch (error: any) {
-            console.log("Error during card reorder: ", error)
             res.status(500).json({ message: error.message })
+            return
         }
     })
 
@@ -135,9 +178,14 @@ const router: Router = Router()
     
 
     //remove card from column
-    router.delete("/columns/:columnId/cards/:cardId", async (req: Request, res: Response) => {
+    router.delete("/columns/:columnId/cards/:cardId", validateToken, async (req: CustomRequest, res: Response) => {
         try{
-            const column = await Column.findById(req.params.columnId)
+            if(!req.user) {
+                res.status(401).json({message: "User not authenticated"})
+                return
+            }
+            const column = await Column.findOne({ _id: req.params.columnId, userId: req.user?.id })
+
             if(!column) {
                 res.status(404).json({message: "Column not found"})
                 return
@@ -153,6 +201,7 @@ const router: Router = Router()
 
         } catch (error: any) {
             res.status(500).json({message: error.message})
+            return
         }
     })
 export default router

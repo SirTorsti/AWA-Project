@@ -60,7 +60,7 @@ return (
             </Button>
         </Modal.Footer>
     </Modal>
-    );
-};
+    )
+}
 
 export default CardModal

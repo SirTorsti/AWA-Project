@@ -1,9 +1,7 @@
 import { Box, Button, TextField } from '@mui/material'
 import { useState } from 'react'
 
-// TODO : REMEMBER TO CREATE A CHECK FOR DUPLICATE USERNAMES
-
-
+//handle register via user router
 const fetchData = async (username: string, password: string) => {
     try {
         const response = await fetch("http://localhost:8000/user/register",{
@@ -36,8 +34,6 @@ const fetchData = async (username: string, password: string) => {
 
 
 }
-
-
 
 const Register = () => {
     const [username, setUsername] = useState<string>('')

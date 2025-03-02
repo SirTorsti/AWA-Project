@@ -30,15 +30,30 @@ const Layout = () => {
         fetchColumns() 
     }, []) 
 
+    //jwt token fetch
+    const getToken = (): string | null => {
+        return localStorage.getItem('token')
+    }
+    //if token expires, redirect user back to login
+    const handleTokenExpiration = () => {
+        window.location.href = '/login'
+    }
     const fetchColumns = async () => {
         try {
-            const response = await fetch("http://localhost:8000/columns", {
+            const token = getToken()
+                const response = await fetch("http://localhost:8000/columns", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 }
             }) 
+            //check for response and token expiration
             if (!response.ok) {
+                if(response.status === 401) {
+                    handleTokenExpiration()
+                    return
+                }
                 throw new Error(`Error ${response.status}`) 
             }
             const data: IColumn[] = await response.json() 
@@ -52,11 +67,14 @@ const Layout = () => {
 
     const addColumn = async () => {
         try {
+            const token = getToken()
             const response = await fetch("http://localhost:8000/columns", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
+                //automatic naming system according to number of existing columns
                 body: JSON.stringify({
                     name: `Column ${columns.length + 1}`,
                 })
@@ -72,10 +90,12 @@ const Layout = () => {
 
     const removeColumn = async (id: string) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${id}`, {
                 method: "DELETE",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 }
             }) 
             if (response.ok) {
@@ -90,16 +110,22 @@ const Layout = () => {
 
     const renameColumn = async (id: string, newName: string) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${id}`, {
                 method: 'PATCH',
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     name: newName
                 })
             }) 
             if (!response.ok) {
+                if(response.status === 401) {
+                    handleTokenExpiration()
+                    return
+                }
                 throw new Error(`Error renaming column ${response.status}`) 
             }
             const updatedColumn = await response.json() 
@@ -113,10 +139,12 @@ const Layout = () => {
 
     const addCard = async (columnId: string, title: string, body: string) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${columnId}/cards`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     title,
@@ -137,10 +165,12 @@ const Layout = () => {
 
     const editCard = async (columnId: string, cardId: string, title: string, body: string) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${columnId}/cards/${cardId}`, {
                 method: "PATCH",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     title,
@@ -148,6 +178,11 @@ const Layout = () => {
                 })
             }) 
             const data = await response.json() 
+
+            if(!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
             const updatedColumns = columns.map(col => col._id === columnId ? data : col) 
             setColumns(updatedColumns) 
         } catch (error) {
@@ -156,18 +191,24 @@ const Layout = () => {
             }
         }
     } 
-
+    //when user drags the cards or moves them around and the order changes, update the columns
     const updateCardOrder = async (columnId: string, cards: any[]) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${columnId}/cards/reorder`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ cards })
             }) 
 
             if(!response.ok){
+                if(response.status === 401) {
+                    handleTokenExpiration()
+                    return
+                }
                 console.log(`Failed to update card order: ${response.status} ${response.statusText}`)
                 throw new Error("Error updating card order")
             }
@@ -184,11 +225,13 @@ const Layout = () => {
 
     const moveCard = async (currentColumnId: string, targetColumnId: string, cardId: string) => {
         try {
+            const token = getToken()
             // Remove card from the current column
             const updatedCurrentColumn = await fetch(`http://localhost:8000/columns/${currentColumnId}/cards/${cardId}`, {
                 method: "DELETE",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
             }) 
 
@@ -222,13 +265,19 @@ const Layout = () => {
 
     const removeCard = async (columnId: string, cardId: string) => {
         try {
+            const token = getToken()
             const response = await fetch(`http://localhost:8000/columns/${columnId}/cards/${cardId}`, {
                 method: "DELETE",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
             }) 
             if (!response.ok) {
+                if(response.status === 401) {
+                    handleTokenExpiration()
+                    return
+                }
                 throw new Error(`Error ${response.status}`) 
             }
             const data = await response.json() 
@@ -239,7 +288,7 @@ const Layout = () => {
             }
         }
     } 
-
+    //simple renaming functions and save functions when user is done editing and presses enter
     const handleColumnRename = (id: string, name: string) => {
         setEditingColumnId(id) 
         setNewColumnName(name) 
@@ -270,7 +319,8 @@ const Layout = () => {
         
     }
 
-
+    //Check if the drag ends in the same column where it started, if yes, just reorder
+    //the logic works even though I did not have time to implement drag and drop to other columns.
     const handleDragEnd = (event: any) => {
             const { active, over } = event 
         
@@ -282,11 +332,7 @@ const Layout = () => {
             let sourceColumn = columns.find(col => col.cards.some(card => card._id === activeId)) 
             let destinationColumn = columns.find(col => col.cards.some(card => card._id === overId)) 
         
-            // If dropped on an empty column
-            if (!destinationColumn) {
-                destinationColumn = columns.find(col => col._id === overId) 
-            }
-        
+            //check that cols exist
             if (!sourceColumn || !destinationColumn) return 
         
             // If card is dropped in the same column, reorder
@@ -310,7 +356,7 @@ const Layout = () => {
         } 
     
 
-    //useDroppable and useDraggable hooks
+    //useDroppable and useDraggable hooks, style and the drag handle
     const SortableItem = ({ id, children }: { id: string;  children: React.ReactNode }) => {
         const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id }) 
 
@@ -348,6 +394,7 @@ const Layout = () => {
         setModalShow(true) 
     } 
 
+    //as a fallback create a new card with the title and body if currentCardId is not found
     const handleModalSave = (title: string, body: string) => {
         if (currentColumnId) {
             if (currentCardId) {

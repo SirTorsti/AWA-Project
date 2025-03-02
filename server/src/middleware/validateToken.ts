@@ -4,7 +4,8 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-interface CustomRequest extends Request {
+//CustomRequest will be used in the backend to attach everything to the user
+export interface CustomRequest extends Request {
     user?: JwtPayload
 }
 
@@ -20,6 +21,7 @@ export const validateToken = (req: CustomRequest, res: Response, next: NextFunct
         req.user = verified
         next()
     } catch (error: any) {
-        res.status(400).json({message: "Access denied, missing token"})
+        res.status(403).json({message: "Access denied, invalid token"})
+        return
     }
 }

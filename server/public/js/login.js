@@ -29,7 +29,7 @@ const fetchData = async (event) => {
         } else {
             const data = await response.json()
             if(data.token) {
-                localStorage.setItem("auth_token", data.token)
+                localStorage.setItem("token", data.token)
                 window.location.href = "/" //needs implementation, should I redirect to home page or root?
             }
         }
